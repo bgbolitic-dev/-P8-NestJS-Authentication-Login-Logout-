@@ -13,14 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface LoginResponse {
   accessToken: string;
@@ -28,8 +21,10 @@ interface LoginResponse {
 }
 
 // Change these to match your brand
-const APP_NAME = "BiGiBi";
-const APP_TAGLINE = "Apartment Management";
+const APP_NAME = "Horizon";
+const HERO_TITLE = "Manage your properties with ease";
+const HERO_SUBTITLE =
+  "Keep track of units, tenants, and payments in one simple place.";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -63,146 +58,166 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen">
-      {/* Full-screen hero with the building photo */}
-      <div className="relative flex min-h-screen overflow-hidden">
+    <main className="min-h-screen bg-white lg:grid lg:grid-cols-2">
+      {/* Left: photo panel (desktop only) */}
+      <section className="relative hidden overflow-hidden lg:block">
         <Image
-          src="/images/login-bg1.jpg"
+          src="/images/login-bg.jpg"
           alt="Modern apartment building"
           fill
           priority
-          sizes="100vw"
-          className="object-cover object-right grayscale"
+          sizes="50vw"
+          className="object-cover grayscale"
         />
-        {/* Soft wash so the card and logo stay legible on any photo */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white/50 via-white/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/30" />
 
-        {/* Brand: frosted pill so it stays readable on any photo */}
-        <div className="absolute left-5 top-5 z-10 sm:left-10 sm:top-8">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/50 bg-white/70 py-2 pl-2 pr-4 shadow-sm backdrop-blur-md">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-slate-900 text-white">
-              <Building2 className="size-5" />
-            </div>
-            <div className="leading-tight">
-              <p className="text-base font-semibold tracking-tight text-slate-900">
-                {APP_NAME}
-              </p>
-              <p className="text-xs text-slate-600">{APP_TAGLINE}</p>
-            </div>
+        <div className="absolute left-10 top-8 z-10 flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-full bg-white text-slate-900">
+            <Building2 className="size-5" />
           </div>
+          <span className="text-lg font-semibold tracking-tight text-white">
+            {APP_NAME}
+          </span>
         </div>
 
-        {/* Login card: centered on mobile, pinned left on desktop */}
-        <div className="relative z-10 flex w-full items-center justify-center px-4 pb-8 pt-24 lg:justify-start lg:pl-28 xl:pl-40 2xl:pl-56">
-          <Card className="w-full max-w-md rounded-2xl border-white/60 bg-white/85 py-2 shadow-2xl backdrop-blur-xl">
-            <CardHeader className="space-y-1.5 px-8 pt-8 text-center">
-              <CardTitle className="text-2xl font-semibold tracking-tight">
-                Sign in
-              </CardTitle>
-              <CardDescription>
-                Please enter your details to continue.
-              </CardDescription>
-            </CardHeader>
+        <div className="absolute inset-x-10 bottom-12 z-10 max-w-md space-y-3 text-white">
+          <h2 className="text-4xl font-semibold leading-tight tracking-tight">
+            {HERO_TITLE}
+          </h2>
+          <p className="text-base text-white/80">{HERO_SUBTITLE}</p>
+        </div>
+      </section>
 
-            <form onSubmit={handleLogin}>
-              <CardContent className="space-y-5 px-8">
-                {error && (
-                  <Alert variant="destructive" role="alert">
-                    <CircleAlert className="size-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+      {/* Right: form panel */}
+      <section className="flex min-h-screen flex-col bg-slate-100">
+        <div className="flex items-center justify-between px-6 py-6 sm:px-10">
+          {/* Logo shown on mobile only (the photo panel is hidden there) */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <div className="flex size-10 items-center justify-center rounded-full bg-slate-900 text-white">
+              <Building2 className="size-5" />
+            </div>
+            <span className="text-lg font-semibold tracking-tight text-slate-900">
+              {APP_NAME}
+            </span>
+          </div>
 
+          <Link
+            href={CONFIG.ROUTES.REGISTER}
+            className="ml-auto inline-flex h-10 items-center rounded-full bg-slate-900 px-6 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+          >
+            Create account
+          </Link>
+        </div>
+
+        <div className="flex flex-1 items-center justify-center px-6 pb-12">
+          <Card className="w-full max-w-md rounded-2xl border-slate-200 bg-white py-0 shadow-xl">
+            <CardContent className="p-8 sm:p-10">
+              <div className="space-y-8">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    autoComplete="username"
-                    placeholder="Enter your username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="h-11 bg-white"
-                    required
-                  />
+                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+                    Welcome back
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Sign in to your account to continue.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
+                <form onSubmit={handleLogin} className="space-y-5">
+                  {error && (
+                    <Alert variant="destructive" role="alert">
+                      <CircleAlert className="size-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
                     <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-11 bg-white pr-10"
+                      id="username"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="h-11"
                       required
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
-                      className="absolute right-0 top-0 size-11 text-muted-foreground hover:bg-transparent"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
-                    </Button>
                   </div>
-                  <div className="flex justify-end">
-                    <Link
-                      href="/forgot-password"
-                      className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
 
-              <CardFooter className="flex flex-col gap-4 border-0 bg-transparent px-8 pb-8">
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="h-11 w-full bg-slate-800 text-white hover:bg-slate-900"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign in"
-                  )}
-                </Button>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
+                      <Link
+                        href="/forgot-password"
+                        className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="h-11 pr-10"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
+                        className="absolute right-0 top-0 size-11 text-muted-foreground hover:bg-transparent"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="h-11 w-full bg-slate-900 text-white hover:bg-slate-800"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign in"
+                    )}
+                  </Button>
+                </form>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  New here?{" "}
+                  Don&apos;t have an account?{" "}
                   <Link
                     href={CONFIG.ROUTES.REGISTER}
-                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                    className="font-medium text-slate-900 underline-offset-4 hover:underline"
                   >
-                    Create an account
+                    Register
                   </Link>
                 </p>
-              </CardFooter>
-            </form>
+              </div>
+            </CardContent>
           </Card>
         </div>
 
-        {/* Footer */}
-        <p className="absolute bottom-4 left-0 right-0 z-10 text-center text-xs text-slate-700">
+        <p className="pb-6 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
         </p>
-      </div>
+      </section>
     </main>
   );
 }
