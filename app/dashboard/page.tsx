@@ -32,7 +32,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Keep these the same as the login and register pages
-const APP_NAME = "Horizon";
+const APP_NAME = "BiGiBi";
 const APP_TAGLINE = "Apartment Management";
 const CURRENCY = "PHP"; // change to "USD" etc.
 
