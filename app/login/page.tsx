@@ -21,7 +21,7 @@ interface LoginResponse {
 }
 
 // Change these to match your brand
-const APP_NAME = "Horizon";
+const APP_NAME = "BiGiBi";
 const HERO_TITLE = "Manage your properties with ease";
 const HERO_SUBTITLE =
   "Keep track of units, tenants, and payments in one simple place.";

@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 
 // Keep these the same as the login page
-const APP_NAME = "Horizon";
+const APP_NAME = "BiGiBi";
 const HERO_TITLE = "Manage your properties with ease";
 const HERO_SUBTITLE =
   "Keep track of units, tenants, and payments in one simple place.";
