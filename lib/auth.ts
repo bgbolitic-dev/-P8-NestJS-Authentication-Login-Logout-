@@ -1,3 +1,4 @@
+// lib/auth.ts
 import { CONFIG } from "./config";
 
 export const getAccessToken = (): string | null => {
@@ -8,6 +9,41 @@ export const getAccessToken = (): string | null => {
     return null;
   }
   return token;
+};
+
+// JWTs use base64url (- and _, no padding), but atob() only reads standard
+// base64, so convert first or some tokens fail to decode.
+const decodeJwtPayload = (token: string): Record<string, any> | null => {
+  try {
+    const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+};
+
+export const getUserId = (): number | null => {
+  const token = getAccessToken();
+  if (!token) return null;
+
+  const payload = decodeJwtPayload(token);
+  const userId = payload?.sub ?? payload?.id ?? payload?.userId;
+  return userId ? Number(userId) : null;
+};
+
+export const getUsername = (): string | null => {
+  const token = getAccessToken();
+  if (!token) return null;
+  return decodeJwtPayload(token)?.username ?? null;
+};
+
+// Only works if your backend puts `role` in the token.
+// Useful later for sending landlords and tenants to different dashboards.
+export const getUserRole = (): string | null => {
+  const token = getAccessToken();
+  if (!token) return null;
+  return decodeJwtPayload(token)?.role ?? null;
 };
 
 export const setTokens = (accessToken?: string, refreshToken?: string): void => {
