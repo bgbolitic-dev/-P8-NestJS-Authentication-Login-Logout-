@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Building2, DoorOpen, FileText, Users, Wallet, Wrench } from "lucide-react";
+
+// CHANGED: added useEffect
+import { useEffect, useState } from "react";
+// CHANGED: added LayoutDashboard
+import { Building2, DoorOpen, FileText, LayoutDashboard, Users, Wallet, Wrench } from "lucide-react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+// CHANGED: NEW import (right after the useAuthGuard import)
+import { apiClient } from "@/lib/api";
 import { CONFIG } from "@/lib/config";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { ResourceManager, type ResourceDef } from "@/components/resource-manager";
+// CHANGED: NEW import
+import { Overview } from "@/components/overview";
 
 // Same name as the login and register pages
 const APP_NAME = "BiGiBi";
@@ -13,6 +20,9 @@ const APP_TAGLINE = "Apartment Management";
 
 const E = CONFIG.ENDPOINTS;
 
+// CHANGED: NEW - for lists that come with names from the backend JOINs
+const tenantName = (r: Record<string, any>) => `${r.tenant_first_name} ${r.tenant_last_name}`;
+const unitName = (r: Record<string, any>) => `${r.property_name} · Unit ${r.unit_number}`;
 const personName = (r: Record<string, any>) => `${r.first_name} ${r.last_name}`;
 
 /* ------------------------------------------------------------------ */
@@ -26,24 +36,17 @@ const properties: ResourceDef = {
   description: "Buildings you own or manage.",
   endpoint: E.PROPERTIES,
   idKey: "property_id",
-  fields: [
+    fields: [
     { key: "property_name", label: "Property name", placeholder: "e.g. Sunrise Residences" },
     { key: "address", label: "Address", placeholder: "e.g. 123 Main Street", wide: true },
     { key: "city", label: "City" },
     { key: "zip_code", label: "ZIP code" },
-    {
-      key: "landlord_id",
-      label: "Landlord",
-      type: "relation",
-      relation: { endpoint: E.LANDLORDS, valueKey: "landlord_id", label: personName },
-    },
   ],
   columns: [
     { key: "property_name", label: "Property name" },
     { key: "address", label: "Address" },
     { key: "city", label: "City" },
     { key: "zip_code", label: "ZIP code" },
-    { key: "landlord_id", label: "Landlord ID" },
   ],
 };
 
@@ -77,13 +80,19 @@ const units: ResourceDef = {
       required: false,
     },
   ],
-  columns: [
-    { key: "property_id", label: "Property ID" },
+    columns: [
+    // CHANGED: property name instead of its ID, plus the current tenant
+    { key: "property_name", label: "Property" },
     { key: "unit_number", label: "Unit" },
     { key: "bedrooms", label: "Beds" },
     { key: "bathrooms", label: "Baths" },
     { key: "rent_amount", label: "Rent", kind: "money" },
     { key: "statusx", label: "Status", kind: "badge" },
+    {
+      key: "tenant_first_name",
+      label: "Tenant",
+      format: (r) => (r.tenant_first_name ? tenantName(r) : "-"),
+    },
   ],
 };
 
@@ -93,6 +102,8 @@ const tenants: ResourceDef = {
   description: "People renting your units.",
   endpoint: E.TENANTS,
   idKey: "tenant_id",
+    // CHANGED: tenants now sign up through the register page, so no "Add" button here
+  canCreate: false,
   fields: [
     { key: "first_name", label: "First name" },
     { key: "last_name", label: "Last name" },
@@ -123,7 +134,7 @@ const leases: ResourceDef = {
       relation: {
         endpoint: E.UNITS,
         valueKey: "unit_id",
-        label: (r) => `Unit ${r.unit_number} (#${r.unit_id})`,
+        label: unitName,
       },
     },
     {
@@ -145,9 +156,10 @@ const leases: ResourceDef = {
       required: false,
     },
   ],
+  // leases
   columns: [
-    { key: "unit_id", label: "Unit ID" },
-    { key: "tenant_id", label: "Tenant ID" },
+    { key: "unit_number", label: "Unit", format: (r) => `Unit ${r.unit_number}` },
+    { key: "tenant_first_name", label: "Tenant", format: tenantName },
     { key: "start_date", label: "Start", kind: "date" },
     { key: "end_date", label: "End", kind: "date" },
     { key: "monthly_rent", label: "Rent", kind: "money" },
@@ -170,7 +182,7 @@ const payments: ResourceDef = {
       relation: {
         endpoint: E.LEASES,
         valueKey: "lease_id",
-        label: (r) => `Lease #${r.lease_id}`,
+        label: (r) => `${unitName(r)} · ${tenantName(r)}`,
       },
     },
     {
@@ -196,9 +208,10 @@ const payments: ResourceDef = {
       required: false,
     },
   ],
+  // payments
   columns: [
-    { key: "lease_id", label: "Lease ID" },
-    { key: "tenant_id", label: "Tenant ID" },
+    { key: "unit_number", label: "Unit", format: unitName },
+    { key: "tenant_first_name", label: "Tenant", format: tenantName },
     { key: "payment_date", label: "Date", kind: "date" },
     { key: "amount_paid", label: "Amount", kind: "money" },
     { key: "payment_method", label: "Method" },
@@ -220,7 +233,7 @@ const maintenance: ResourceDef = {
       relation: {
         endpoint: E.UNITS,
         valueKey: "unit_id",
-        label: (r) => `Unit ${r.unit_number} (#${r.unit_id})`,
+        label: unitName,
       },
     },
     {
@@ -254,15 +267,19 @@ const maintenance: ResourceDef = {
       required: false,
     },
   ],
+  // maintenance
   columns: [
-    { key: "unit_id", label: "Unit ID" },
-    { key: "tenant_id", label: "Tenant ID" },
+        { key: "unit_number", label: "Unit", format: (r) => `Unit ${r.unit_number}` },
+    { key: "tenant_first_name", label: "Tenant", format: tenantName },
     { key: "request_date", label: "Date", kind: "date" },
     { key: "descriptionx", label: "Issue", truncate: true },
     { key: "priority", label: "Priority", kind: "badge" },
     { key: "statusx", label: "Status", kind: "badge" },
   ],
 };
+
+// CHANGED: NEW - the Overview item sits above the table tabs in the sidebar
+const OVERVIEW = { value: "overview", label: "Overview", icon: LayoutDashboard };
 
 const TABS = [
   { value: "properties", label: "Properties", icon: Building2, resource: properties },
@@ -274,8 +291,19 @@ const TABS = [
 ];
 
 export default function DashboardPage() {
-  const { isChecking } = useAuthGuard({ requireAuth: true });
-  const [active, setActive] = useState("properties");
+  const { isChecking } = useAuthGuard({ requireAuth: true, role: "landlord" });
+  // CHANGED: the page now opens on the Overview tab
+  const [active, setActive] = useState("overview");
+  const [landlordId, setLandlordId] = useState<number | null>(null);
+  const [profileError, setProfileError] = useState("");
+
+  useEffect(() => {
+    apiClient<{ landlord_id: number }>(`${E.LANDLORDS}/me`, { requiresAuth: true })
+      .then((l) => setLandlordId(l.landlord_id))
+      .catch((err: any) =>
+        setProfileError(err.message || "Could not load your landlord profile.")
+      );
+  }, []);
 
   if (isChecking) {
     return (
@@ -285,18 +313,44 @@ export default function DashboardPage() {
     );
   }
 
+  // CHANGED: NEW - Overview is not one of the table tabs, so it is checked first
+  const isOverview = active === "overview";
   const current = TABS.find((t) => t.value === active) ?? TABS[0];
+
+  const resource: ResourceDef =
+    current.value === "properties"
+      ? {
+          ...current.resource,
+          listQuery: `?landlord_id=${landlordId}`,
+          extraPayload: { landlord_id: landlordId },
+        }
+      : current.value === "units"
+      ? { ...current.resource, listQuery: `?landlord_id=${landlordId}` }
+      : current.resource;
+
+  let content;
+  if (profileError) {
+    content = <p className="text-sm text-red-400">{profileError}</p>;
+  } else if (landlordId === null) {
+    content = <p className="text-sm text-neutral-400">Loading your account...</p>;
+  } else if (isOverview) {
+    // CHANGED: NEW - show the stat cards
+    content = <Overview />;
+  } else {
+    content = <ResourceManager key={current.value} resource={resource} />;
+  }
 
   return (
     <DashboardShell
       appName={APP_NAME}
       tagline={APP_TAGLINE}
-      items={TABS.map(({ value, label, icon }) => ({ value, label, icon }))}
-      active={current.value}
+      // CHANGED: Overview goes first in the sidebar
+      items={[OVERVIEW, ...TABS.map(({ value, label, icon }) => ({ value, label, icon }))]}
+      active={isOverview ? OVERVIEW.value : current.value}
       onChange={setActive}
-      title={current.label}
+      title={isOverview ? OVERVIEW.label : current.label}
     >
-      <ResourceManager key={current.value} resource={current.resource} />
+      {content}
     </DashboardShell>
   );
 }

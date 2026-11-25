@@ -26,13 +26,20 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+    // CHANGED: NEW - the account type and the profile fields
+  const [role, setRole] = useState<"landlord" | "tenant">("landlord");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (isChecking) return null;
 
-  const handleRegister = async (e: React.FormEvent) => {
+    const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -44,10 +51,37 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await apiClient("/auth/register", {
+      // CHANGED: step 1 - create the login account, now with the chosen role
+      const user = await apiClient<{ id: number }>("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, role }),
       });
+
+      // CHANGED: step 2 - create the landlord or tenant profile linked to that account
+      if (role === "landlord") {
+        await apiClient(CONFIG.ENDPOINTS.LANDLORDS, {
+          method: "POST",
+          body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            phone,
+            id: user.id,
+          }),
+        });
+      } else {
+        await apiClient(CONFIG.ENDPOINTS.TENANTS, {
+          method: "POST",
+          body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            phone,
+            emergency_contact: emergencyContact,
+            id: user.id,
+          }),
+        });
+      }
 
       router.push(CONFIG.ROUTES.LOGIN);
     } catch (err: any) {
@@ -128,6 +162,100 @@ export default function RegisterPage() {
                       <CircleAlert className="size-4" />
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
+                  )}
+
+                                    {/* CHANGED: NEW - choose the account type */}
+                  <div className="space-y-2">
+                    <Label>I am a</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["landlord", "tenant"] as const).map((r) => (
+                        <Button
+                          key={r}
+                          type="button"
+                          variant={role === r ? "default" : "outline"}
+                          onClick={() => setRole(r)}
+                          className={
+                            role === r
+                              ? "h-11 bg-slate-900 text-white hover:bg-slate-800"
+                              : "h-11"
+                          }
+                        >
+                          {r === "landlord" ? "Landlord" : "Tenant"}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CHANGED: NEW - profile fields */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="h-11"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-11"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="09123456789"
+                      maxLength={20}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="h-11"
+                      required
+                    />
+                  </div>
+
+                  {/* only tenants have an emergency contact */}
+                  {role === "tenant" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="emergencyContact">Emergency contact</Label>
+                      <Input
+                        id="emergencyContact"
+                        type="text"
+                        placeholder="Name and number"
+                        maxLength={100}
+                        value={emergencyContact}
+                        onChange={(e) => setEmergencyContact(e.target.value)}
+                        className="h-11"
+                        required
+                      />
+                    </div>
                   )}
 
                   <div className="space-y-2">

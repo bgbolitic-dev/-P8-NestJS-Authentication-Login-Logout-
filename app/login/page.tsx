@@ -18,6 +18,11 @@ import { Card, CardContent } from "@/components/ui/card";
 interface LoginResponse {
   accessToken: string;
   refreshToken: string;
+  // CHANGED: the backend now also sends these
+  role: string;
+  userId: number;
+  // CHANGED: the backend sends this (with a 200 status) when the login is wrong
+  error?: string;
 }
 
 // Change these to match your brand
@@ -42,14 +47,26 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    try {
+        try {
       const data = await apiClient<LoginResponse>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
 
+      // CHANGED: a wrong username/password comes back as { error }, so show it
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+
       setTokens(data.accessToken, data.refreshToken);
-      router.push(CONFIG.ROUTES.DASHBOARD);
+
+      // CHANGED: tenants go to /tenant, everyone else to /dashboard
+      router.push(
+        data.role === "tenant"
+          ? CONFIG.ROUTES.TENANT_DASHBOARD
+          : CONFIG.ROUTES.DASHBOARD
+      );
     } catch (err: any) {
       setError(err.message);
     } finally {

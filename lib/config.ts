@@ -5,11 +5,13 @@ export const CONFIG = {
     ACCESS_TOKEN: "accessToken",
     REFRESH_TOKEN: "refreshToken",
   },
-  ROUTES: {
+    ROUTES: {
     HOME: "/",
     LOGIN: "/login",
     REGISTER: "/register",
     DASHBOARD: "/dashboard",
+    // CHANGED: NEW - where tenants land after login
+    TENANT_DASHBOARD: "/tenant",
   },
   ENDPOINTS: {
     LOGIN: "/auth/login",

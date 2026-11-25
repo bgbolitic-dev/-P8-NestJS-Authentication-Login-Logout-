@@ -84,6 +84,8 @@ export interface ColumnDef {
   label: string;
   kind?: "text" | "number" | "money" | "date" | "badge";
   truncate?: boolean;
+  // CHANGED: NEW - optional function that builds the cell text from the whole row
+  format?: (row: Row) => string;
 }
 
 export interface ResourceDef {
@@ -96,6 +98,12 @@ export interface ResourceDef {
   columns: ColumnDef[];
   /** Send the logged-in user's id as `id` (like the landlords table). */
   withUserId?: boolean;
+    // CHANGED: NEW - extra text added only to the list request, e.g. "?landlord_id=4"
+  listQuery?: string;
+  // CHANGED: NEW - values always sent on save, e.g. { landlord_id: 4 }
+  extraPayload?: Record<string, any>;
+  // CHANGED: NEW - set to false to hide the "Add" button (default: true)
+  canCreate?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -147,6 +155,7 @@ function statusVariant(status: string): BadgeVariant {
 }
 
 function renderCell(row: Row, col: ColumnDef) {
+  if (col.format) return col.format(row);
   const v = row[col.key];
   if (v === null || v === undefined || v === "") return "-";
   switch (col.kind) {
@@ -268,6 +277,9 @@ export function ResourceManager({ resource }: { resource: ResourceDef }) {
     fields,
     columns,
     withUserId,
+    listQuery,
+    extraPayload,
+    canCreate = true,
   } = resource;
 
   const [rows, setRows] = useState<Row[]>([]);
@@ -290,7 +302,7 @@ export function ResourceManager({ resource }: { resource: ResourceDef }) {
     setLoading(true);
     setError("");
     try {
-      const data = await apiClient<Row[]>(endpoint, {
+      const data = await apiClient<Row[]>(`${endpoint}${listQuery ?? ""}`, {
         method: "GET",
         requiresAuth: true,
       });
@@ -300,7 +312,7 @@ export function ResourceManager({ resource }: { resource: ResourceDef }) {
     } finally {
       setLoading(false);
     }
-  }, [endpoint, title]);
+    }, [endpoint, listQuery, title]);
 
   useEffect(() => {
     fetchRows();
@@ -427,6 +439,9 @@ export function ResourceManager({ resource }: { resource: ResourceDef }) {
       }
       payload.id = userId;
     }
+
+        // CHANGED: always include the extra values (e.g. the logged-in landlord's id)
+    if (extraPayload) Object.assign(payload, extraPayload);
 
     setSubmitting(true);
     try {
@@ -666,13 +681,16 @@ export function ResourceManager({ resource }: { resource: ResourceDef }) {
               />
               Refresh
             </Button>
-            <Button
-              onClick={openCreateForm}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="mr-2 size-4" />
-              Add {singular}
-            </Button>
+            {/* CHANGED: the Add button can now be hidden */}
+            {canCreate && (
+              <Button
+                onClick={openCreateForm}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="mr-2 size-4" />
+                Add {singular}
+              </Button>
+            )}
           </div>
         </CardHeader>
 
