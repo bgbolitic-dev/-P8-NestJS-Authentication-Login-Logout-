@@ -1,8 +1,12 @@
 import "./globals.css";
-import { Geist } from "next/font/google";
+// CHANGED: Plus Jakarta Sans for the interface, Fraunces for big headlines
+import { Plus_Jakarta_Sans, Fraunces } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+// CHANGED: was Geist
+const sans = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-sans" });
+// CHANGED: NEW - the headline font (used with the class "font-display")
+const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
 
 
 export default function RootLayout({
@@ -11,7 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
+        // CHANGED: both fonts are attached to the page
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", sans.variable, display.variable)}>
       <body suppressHydrationWarning>
         {children}
       </body>

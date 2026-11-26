@@ -465,7 +465,10 @@ export default function TenantPage() {
       items={items}
       active={current.value}
       onChange={setActive}
-      title={active === "lease" && tenant ? `Welcome, ${tenant.first_name}` : current.label}
+            // CHANGED: the shell now builds "Welcome back, {first name}" itself
+      title={current.label}
+      greeting={active === "lease"}
+      subtitle={active === "lease" ? "Here's your rental at a glance." : undefined}
     >
       {content}
     </DashboardShell>

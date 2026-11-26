@@ -334,8 +334,8 @@ export default function DashboardPage() {
   } else if (landlordId === null) {
     content = <p className="text-sm text-neutral-400">Loading your account...</p>;
   } else if (isOverview) {
-    // CHANGED: NEW - show the stat cards
-    content = <Overview />;
+        // CHANGED: Overview now needs to know which landlord to load
+    content = <Overview landlordId={landlordId} />;
   } else {
     content = <ResourceManager key={current.value} resource={resource} />;
   }
@@ -348,9 +348,13 @@ export default function DashboardPage() {
       items={[OVERVIEW, ...TABS.map(({ value, label, icon }) => ({ value, label, icon }))]}
       active={isOverview ? OVERVIEW.value : current.value}
       onChange={setActive}
-      title={isOverview ? OVERVIEW.label : current.label}
+            title={isOverview ? OVERVIEW.label : current.label}
+      // CHANGED: NEW - greeting on the Overview, and a short line under every title
+      greeting={isOverview}
+      subtitle={isOverview ? "Here's what's happening with your properties today." : current.resource.description}
     >
       {content}
     </DashboardShell>
+    
   );
 }

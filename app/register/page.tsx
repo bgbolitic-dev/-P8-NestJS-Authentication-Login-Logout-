@@ -2,62 +2,69 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { Building2, Eye, EyeOff, Loader2, CircleAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  CircleAlert,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+} from "lucide-react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { apiClient } from "@/lib/api";
 import { CONFIG } from "@/lib/config";
+// CHANGED: NEW - the shared card
+import { AuthLayout } from "@/components/auth-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent } from "@/components/ui/card";
-
-// Keep these the same as the login page
-const APP_NAME = "BiGiBi";
-const HERO_TITLE = "Manage your properties with ease";
-const HERO_SUBTITLE =
-  "Keep track of units, tenants, and payments in one simple place.";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { isChecking } = useAuthGuard({ requireAuth: false });
+  // CHANGED: NEW - which step is showing (1 = account, 2 = about you)
+  const [step, setStep] = useState<1 | 2>(1);
+  const [role, setRole] = useState<"landlord" | "tenant">("landlord");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-    // CHANGED: NEW - the account type and the profile fields
-  const [role, setRole] = useState<"landlord" | "tenant">("landlord");
+  const [showPassword, setShowPassword] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (isChecking) return null;
 
-    const handleRegister = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    // CHANGED: on step 1, only check the passwords and move to step 2
+    if (step === 1) {
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+      setStep(2);
       return;
     }
 
     setLoading(true);
 
     try {
-      // CHANGED: step 1 - create the login account, now with the chosen role
+      // the same two calls as before
       const user = await apiClient<{ id: number }>("/auth/register", {
         method: "POST",
         body: JSON.stringify({ username, password, role }),
       });
 
-      // CHANGED: step 2 - create the landlord or tenant profile linked to that account
       if (role === "landlord") {
         await apiClient(CONFIG.ENDPOINTS.LANDLORDS, {
           method: "POST",
@@ -86,272 +93,243 @@ export default function RegisterPage() {
       router.push(CONFIG.ROUTES.LOGIN);
     } catch (err: any) {
       setError(err.message);
+      // CHANGED: a taken username belongs to step 1, so go back to it
+      if (/username/i.test(err.message)) setStep(1);
     } finally {
       setLoading(false);
     }
   };
 
+  // CHANGED: everything below is the new design
   return (
-    <main className="min-h-screen bg-white lg:grid lg:grid-cols-2">
-      {/* Left: photo panel (desktop only) */}
-      <section className="relative hidden overflow-hidden lg:block">
-        <Image
-          src="/images/login-bg.jpg"
-          alt="Modern apartment building"
-          fill
-          priority
-          sizes="50vw"
-          className="object-cover grayscale"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/30" />
-
-        <div className="absolute left-10 top-8 z-10 flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-full bg-white text-slate-900">
-            <Building2 className="size-5" />
-          </div>
-          <span className="text-lg font-semibold tracking-tight text-white">
-            {APP_NAME}
-          </span>
+    <AuthLayout
+      active="register"
+      heroTitle="Let's get you settled in."
+      heroSubtitle="Leases, payments and repairs for landlords and tenants, in one place."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1">
+          <h1 className="font-display text-3xl font-semibold tracking-tight">
+            Create your account
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {step === 2
+              ? "Tell us a little about yourself."
+              : role === "landlord"
+              ? "Register to start managing your properties."
+              : "Register to view your lease, payments and repair requests."}
+          </p>
         </div>
 
-        <div className="absolute inset-x-10 bottom-12 z-10 max-w-md space-y-3 text-white">
-          <h2 className="text-4xl font-semibold leading-tight tracking-tight">
-            {HERO_TITLE}
-          </h2>
-          <p className="text-base text-white/80">{HERO_SUBTITLE}</p>
-        </div>
-      </section>
-
-      {/* Right: form panel */}
-      <section className="flex min-h-screen flex-col bg-slate-100">
-        <div className="flex items-center justify-between px-6 py-6 sm:px-10">
-          {/* Logo shown on mobile only (the photo panel is hidden there) */}
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="flex size-10 items-center justify-center rounded-full bg-slate-900 text-white">
-              <Building2 className="size-5" />
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-slate-900">
-              {APP_NAME}
-            </span>
-          </div>
-
-          <Link
-            href={CONFIG.ROUTES.LOGIN}
-            className="ml-auto inline-flex h-10 items-center rounded-full bg-slate-900 px-6 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-          >
-            Sign in
-          </Link>
+        {/* step indicator */}
+        <div className="flex items-center gap-2" aria-label={`Step ${step} of 2`}>
+          <span className="h-1.5 flex-1 rounded-full bg-primary" />
+          <span
+            className={`h-1.5 flex-1 rounded-full ${step === 2 ? "bg-primary" : "bg-secondary"}`}
+          />
+          <span className="text-xs text-muted-foreground">Step {step} of 2</span>
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-6 pb-12">
-          <Card className="w-full max-w-md rounded-2xl border-slate-200 bg-white py-0 shadow-xl">
-            <CardContent className="p-8 sm:p-10">
-              <div className="space-y-8">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-                    Create an account
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Register to start managing your properties.
-                  </p>
-                </div>
+        {error && (
+          <Alert variant="destructive" role="alert" className="py-2">
+            <CircleAlert className="size-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-                <form onSubmit={handleRegister} className="space-y-5">
-                  {error && (
-                    <Alert variant="destructive" role="alert">
-                      <CircleAlert className="size-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-
-                                    {/* CHANGED: NEW - choose the account type */}
-                  <div className="space-y-2">
-                    <Label>I am a</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(["landlord", "tenant"] as const).map((r) => (
-                        <Button
-                          key={r}
-                          type="button"
-                          variant={role === r ? "default" : "outline"}
-                          onClick={() => setRole(r)}
-                          className={
-                            role === r
-                              ? "h-11 bg-slate-900 text-white hover:bg-slate-800"
-                              : "h-11"
-                          }
-                        >
-                          {r === "landlord" ? "Landlord" : "Tenant"}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* CHANGED: NEW - profile fields */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First name</Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last name</Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="h-11"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      autoComplete="tel"
-                      placeholder="09123456789"
-                      maxLength={20}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="h-11"
-                      required
-                    />
-                  </div>
-
-                  {/* only tenants have an emergency contact */}
-                  {role === "tenant" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="emergencyContact">Emergency contact</Label>
-                      <Input
-                        id="emergencyContact"
-                        type="text"
-                        placeholder="Name and number"
-                        maxLength={100}
-                        value={emergencyContact}
-                        onChange={(e) => setEmergencyContact(e.target.value)}
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input
-                      id="username"
-                      type="text"
-                      autoComplete="username"
-                      placeholder="Choose a username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="h-11"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        placeholder="Create a password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-11 pr-10"
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
-                        }
-                        className="absolute right-0 top-0 size-11 text-muted-foreground hover:bg-transparent"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="size-4" />
-                        ) : (
-                          <Eye className="size-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      placeholder="Re-enter your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="h-11"
-                      required
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="h-11 w-full bg-slate-900 text-white hover:bg-slate-800"
+        {/* STEP 1: account */}
+        {step === 1 && (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>I am a</Label>
+              <div className="grid grid-cols-2 gap-1 rounded-full bg-secondary p-1">
+                {(["landlord", "tenant"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRole(r)}
+                    aria-pressed={role === r}
+                    className={`flex h-8 items-center justify-center gap-2 rounded-full text-sm font-medium transition-colors ${
+                      role === r
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                        Creating account...
-                      </>
+                    {r === "landlord" ? (
+                      <Building2 className="size-4" />
                     ) : (
-                      "Create account"
+                      <KeyRound className="size-4" />
                     )}
-                  </Button>
-                </form>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
-                  <Link
-                    href={CONFIG.ROUTES.LOGIN}
-                    className="font-medium text-slate-900 underline-offset-4 hover:underline"
-                  >
-                    Sign in
-                  </Link>
-                </p>
+                    {r === "landlord" ? "Landlord" : "Tenant"}
+                  </button>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
 
-        <p className="pb-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
-        </p>
-      </section>
-    </main>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                autoComplete="username"
+                placeholder="Choose a username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="h-10"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Create a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-10 pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-0 top-0 size-10 text-muted-foreground hover:bg-transparent"
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm password</Label>
+              <Input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                placeholder="Re-enter your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="h-10"
+                required
+              />
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: about you */}
+        {step === 2 && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-10"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-10"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-10"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="09123456789"
+                maxLength={20}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="h-10"
+                required
+              />
+            </div>
+
+            {role === "tenant" && (
+              <div className="space-y-2">
+                <Label htmlFor="emergencyContact">Emergency contact</Label>
+                <Input
+                  id="emergencyContact"
+                  type="text"
+                  placeholder="Name and number"
+                  maxLength={100}
+                  value={emergencyContact}
+                  onChange={(e) => setEmergencyContact(e.target.value)}
+                  className="h-10"
+                  required
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* buttons */}
+        {step === 1 ? (
+          <Button type="submit" className="h-11 w-full rounded-full">
+            Continue
+            <ArrowRight className="ml-2 size-4" />
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-full px-5"
+              onClick={() => {
+                setError("");
+                setStep(1);
+              }}
+            >
+              <ArrowLeft className="mr-2 size-4" />
+              Back
+            </Button>
+            <Button type="submit" disabled={loading} className="h-11 flex-1 rounded-full">
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                "Create account"
+              )}
+            </Button>
+          </div>
+        )}
+      </form>
+    </AuthLayout>
   );
 }
